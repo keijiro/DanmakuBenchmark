@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
 
@@ -38,7 +40,7 @@ public class DanmakuRenderer : System.IDisposable
              (VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2));
 
         using (var varray = CreateVertexArray(bullets))
-            _mesh.SetVertexBufferData(varray, 0, 0, vcount);
+            _mesh.SetVertexBufferData(varray, 0, 0, bullets.Length);
 
         _mesh.SetIndexBufferParams(vcount, IndexFormat.UInt32);
 
@@ -48,27 +50,53 @@ public class DanmakuRenderer : System.IDisposable
         _mesh.SetSubMesh(0, new SubMeshDescriptor(0, vcount, MeshTopology.Quads), MeshUpdateFlags.DontRecalculateBounds);
     }
 
-    NativeArray<float4> CreateVertexArray(NativeSlice<Bullet> bullets)
+    NativeArray<Quad> CreateVertexArray(NativeSlice<Bullet> bullets)
     {
-        var array = new NativeArray<float4>
-          (bullets.Length * 4, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+        var array = new NativeArray<Quad>
+          (bullets.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
-        var offs = 0;
-
-        for (var i = 0; i < bullets.Length; i++)
-        {
-            var p = bullets[i].Position;
-
-            var dx = 0.01f;
-            var dy = 0.01f;
-
-            array[offs++] = math.float4(p.x - dx, p.y + dy, 0, 1);
-            array[offs++] = math.float4(p.x + dx, p.y + dy, 1, 1);
-            array[offs++] = math.float4(p.x + dx, p.y - dy, 1, 0);
-            array[offs++] = math.float4(p.x - dx, p.y - dy, 0, 0);
-        }
+        new VertexConstructJob(bullets, array).Schedule(bullets.Length, 64).Complete();
 
         return array;
+    }
+
+    readonly struct Quad
+    {
+        readonly float4 _v0, _v1, _v2, _v3;
+
+        public Quad(float2 center, float extent)
+        {
+            _v0 = math.float4(center.x - extent, center.y + extent, 0, 1);
+            _v1 = math.float4(center.x + extent, center.y + extent, 1, 1);
+            _v2 = math.float4(center.x + extent, center.y - extent, 1, 0);
+            _v3 = math.float4(center.x - extent, center.y - extent, 0, 0);
+        }
+    }
+
+    [BurstCompile]
+    struct VertexConstructJob : IJobParallelFor
+    {
+        [ReadOnly] NativeSlice<Bullet> _bullets;
+        [WriteOnly] NativeArray<Quad> _output;
+
+        public VertexConstructJob
+          (NativeSlice<Bullet> bullets, NativeArray<Quad> output)
+          => (_bullets, _output) = (bullets, output);
+
+        public void Execute(int i)
+          => _output[i] = new Quad(_bullets[i].Position, 0.01f);
+    }
+
+    [BurstCompile]
+    struct IndexConstructJob : IJobParallelFor
+    {
+        [WriteOnly] NativeArray<uint> _output;
+
+        public IndexConstructJob(NativeArray<uint> output)
+          => _output = output;
+
+        public void Execute(int i)
+          => _output[i] = (uint)i;
     }
 
     NativeArray<uint> CreateIndexArray(int vcount)
@@ -76,8 +104,7 @@ public class DanmakuRenderer : System.IDisposable
         var array = new NativeArray<uint>
           (vcount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
 
-        for (var i = 0; i < vcount; i++)
-            array[i] = (uint)i;
+        new IndexConstructJob(array).Schedule(vcount, 64).Complete();
 
         return array;
     }
