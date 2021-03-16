@@ -20,7 +20,8 @@ public readonly struct Bullet
         var angle = hash.Float(math.PI * 2, 0u);
         var speed = hash.Float(0.05f, 0.2f, 1u);
         return new Bullet(math.float2(0, 0),
-                          math.float2(math.cos(angle), math.sin(angle)) * speed);
+                          math.float2(math.cos(angle),
+                                      math.sin(angle)) * speed);
     }
 
     public Bullet NextFrame(float delta)

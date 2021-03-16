@@ -38,8 +38,8 @@ public class DanmakuRenderer : System.IDisposable
         {
             var p = bullets[i].Position;
 
-            var dx = 0.005f;
-            var dy = 0.005f;
+            var dx = 0.01f;
+            var dy = 0.01f;
 
             _vertices.Add(new Vector3(p.x - dx, p.y - dy, 0));
             _vertices.Add(new Vector3(p.x + dx, p.y - dy, 0));

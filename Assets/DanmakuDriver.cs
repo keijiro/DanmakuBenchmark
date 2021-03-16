@@ -38,12 +38,14 @@ public class DanmakuDriver : MonoBehaviour
 
     void Update()
     {
-        var dt = Time.deltaTime;
+        var dt = 1.0f / 60;
         var actives = _info[0].ActiveCount;
+
+        var toSpawn = Time.deltaTime < 1.0f / 50 ? 200 : 10;
 
         var handle = new BulletUpdateJob(_bullets, dt).Schedule(actives, 64);
         handle = new BulletSweepJob(_bullets, _info).Schedule(handle);
-        handle = new BulletSpawnJob(_bullets, _info, 100).Schedule(handle);
+        handle = new BulletSpawnJob(_bullets, _info, toSpawn).Schedule(handle);
         handle.Complete();
 
         _renderer.ConstructMesh(ActiveBulletSlice);
