@@ -252,7 +252,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _apiType: 1
   _material: {fileID: 2100000, guid: e26691852411efd4b910b82a5cf239ba, type: 2}
-  _bulletSize: 0.02
+  _bulletSize: 0.012
   _uiText: {fileID: 2040667872}
 --- !u!4 &1413755001
 Transform:
@@ -373,7 +373,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.079476684, g: 0.1792453, b: 0.14245337, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
