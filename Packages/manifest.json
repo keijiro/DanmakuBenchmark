@@ -1,0 +1,16 @@
+{
+  "scopedRegistries": [
+    {
+      "name": "Keijiro",
+      "url": "https://registry.npmjs.com",
+      "scopes": [
+        "jp.keijiro"
+      ]
+    }
+  ],
+  "dependencies": {
+    "com.unity.burst": "1.5.0",
+    "com.unity.ugui": "1.0.0",
+    "jp.keijiro.klak.math": "1.0.3"
+  }
+}
