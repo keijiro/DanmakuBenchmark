@@ -16,6 +16,22 @@ static class MeshBuilderNew
 
         mesh.Clear();
 
+        // Vertex/index buffer allocation
+        var varray = new NativeArray<Quad>(bulletCount, Allocator.TempJob,
+                                           NativeArrayOptions.UninitializedMemory);
+
+        var iarray = new NativeArray<uint>(vertexCount, Allocator.TempJob,
+                                           NativeArrayOptions.UninitializedMemory);
+
+        // Vertex/index array construction
+        var vjob = new VertexConstructionJob(bullets, size, varray);
+        var ijob = new IndexConstructionJob(iarray);
+
+        var handle = vjob.Schedule(bulletCount, 64);
+        handle = ijob.Schedule(vertexCount, 64, handle);
+
+        handle.Complete();
+
         // Vertex buffer
         mesh.SetVertexBufferParams
           (vertexCount,
@@ -23,76 +39,63 @@ static class MeshBuilderNew
                                          VertexAttributeFormat.Float32, 2),
            new VertexAttributeDescriptor(VertexAttribute.TexCoord0,
                                          VertexAttributeFormat.Float32, 2));
-
-        using (var varray = CreateVertexArray(bullets))
-            mesh.SetVertexBufferData(varray, 0, 0, bulletCount);
+        mesh.SetVertexBufferData(varray, 0, 0, bulletCount);
 
         // Index buffer
         mesh.SetIndexBufferParams(vertexCount, IndexFormat.UInt32);
-
-        using (var iarray = CreateIndexArray(vertexCount))
-            mesh.SetIndexBufferData(iarray, 0, 0, vertexCount);
+        mesh.SetIndexBufferData(iarray, 0, 0, vertexCount);
 
         // Mesh construction
         var meshDesc = new SubMeshDescriptor(0, vertexCount, MeshTopology.Quads);
         mesh.SetSubMesh(0, meshDesc, MeshUpdateFlags.DontRecalculateBounds);
+
+        // Cleanup
+        varray.Dispose();
+        iarray.Dispose();
     }
 
-    static NativeArray<Quad> CreateVertexArray(NativeSlice<Bullet> bullets)
-    {
-        var array = new NativeArray<Quad>
-          (bullets.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-        new VertexConstructJob(bullets, array).Schedule(bullets.Length, 64).Complete();
-        return array;
-    }
-
-    static NativeArray<uint> CreateIndexArray(int vcount)
-    {
-        var array = new NativeArray<uint>
-          (vcount, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-        new IndexConstructJob(array).Schedule(vcount, 64).Complete();
-        return array;
-    }
-
+    // Quad vertex data structure
     readonly struct Quad
     {
         readonly float4 _v0, _v1, _v2, _v3;
 
-        public Quad(float2 center, float extent)
+        public Quad(float2 center, float size)
         {
-            _v0 = math.float4(center.x - extent, center.y + extent, 0, 1);
-            _v1 = math.float4(center.x + extent, center.y + extent, 1, 1);
-            _v2 = math.float4(center.x + extent, center.y - extent, 1, 0);
-            _v3 = math.float4(center.x - extent, center.y - extent, 0, 0);
+            _v0 = math.float4(center.x - size, center.y + size, 0, 1);
+            _v1 = math.float4(center.x + size, center.y + size, 1, 1);
+            _v2 = math.float4(center.x + size, center.y - size, 1, 0);
+            _v3 = math.float4(center.x - size, center.y - size, 0, 0);
         }
     }
 
+    //  Vertex array construction job data
     [BurstCompile]
-    struct VertexConstructJob : IJobParallelFor
+    struct VertexConstructionJob : IJobParallelFor
     {
         [ReadOnly] NativeSlice<Bullet> _bullets;
         [WriteOnly] NativeArray<Quad> _output;
+        float _size;
 
-        public VertexConstructJob
-          (NativeSlice<Bullet> bullets, NativeArray<Quad> output)
-          => (_bullets, _output) = (bullets, output);
+        public VertexConstructionJob(NativeSlice<Bullet> bullets, float size,
+                                     NativeArray<Quad> output)
+          => (_bullets, _output, _size) = (bullets, output, size);
 
         public void Execute(int i)
-          => _output[i] = new Quad(_bullets[i].Position, 0.01f);
+          => _output[i] = new Quad(_bullets[i].Position, _size);
     }
 
+    // Index array construction job data
     [BurstCompile]
-    struct IndexConstructJob : IJobParallelFor
+    struct IndexConstructionJob : IJobParallelFor
     {
         [WriteOnly] NativeArray<uint> _output;
 
-        public IndexConstructJob(NativeArray<uint> output)
+        public IndexConstructionJob(NativeArray<uint> output)
           => _output = output;
 
         public void Execute(int i)
           => _output[i] = (uint)i;
     }
-
 }
 
 } // namespace Danmaku

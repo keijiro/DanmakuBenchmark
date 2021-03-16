@@ -7,11 +7,18 @@ namespace Danmaku {
 
 class DanmakuDriver : MonoBehaviour
 {
+    #region Editable sttributes
+
     enum ApiType { OldApi, NewApi }
 
     [SerializeField] ApiType _apiType = ApiType.OldApi;
     [SerializeField] Material _material = null;
+    [SerializeField] float _bulletSize = 0.02f;
     [SerializeField] UnityEngine.UI.Text _uiText = null;
+
+    #endregion
+
+    #region Private memebers
 
     const int MaxBulletCount = 0x200000;
 
@@ -19,8 +26,15 @@ class DanmakuDriver : MonoBehaviour
     NativeArray<BulletGroupInfo> _info;
     Mesh _mesh;
 
+    int ActiveBulletCount
+      => _info[0].ActiveCount;
+
     NativeSlice<Bullet> ActiveBulletSlice
       => new NativeSlice<Bullet>(_bullets, 0, _info[0].ActiveCount);
+
+    #endregion
+
+    #region MonoBehaviour implementation
 
     void Start()
     {
@@ -45,24 +59,28 @@ class DanmakuDriver : MonoBehaviour
     void Update()
     {
         var dt = 1.0f / 60;
-        var actives = _info[0].ActiveCount;
-
         var toSpawn = Time.deltaTime < 1.0f / 50 ? 400 : 20;
 
-        var handle = new BulletUpdateJob(_bullets, dt).Schedule(actives, 64);
+        // Bullet update job chain
+        var handle = new BulletUpdateJob(_bullets, dt).Schedule(ActiveBulletCount, 64);
         handle = new BulletSweepJob(_bullets, _info).Schedule(handle);
         handle = new BulletSpawnJob(_bullets, _info, toSpawn).Schedule(handle);
         handle.Complete();
 
+        // Mesh construction
         if (_apiType == ApiType.OldApi)
-            MeshBuilderOld.Build(ActiveBulletSlice, 0.02f, _mesh);
+            MeshBuilderOld.Build(ActiveBulletSlice, _bulletSize, _mesh);
         else
-            MeshBuilderNew.Build(ActiveBulletSlice, 0.02f, _mesh);
+            MeshBuilderNew.Build(ActiveBulletSlice, _bulletSize, _mesh);
 
+        // Draw call
         Graphics.DrawMesh(_mesh, Vector3.zero, Quaternion.identity, _material, 0);
 
-        _uiText.text = $"{actives:n0} bullets";
+        // UI update
+        _uiText.text = $"{ActiveBulletCount:n0} bullets";
     }
+
+    #endregion
 }
 
 } // namespace Danmaku

@@ -250,8 +250,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b31bdb8822a9e9a4a8038bc1a6bdd319, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _apiType: 0
+  _apiType: 1
   _material: {fileID: 2100000, guid: e26691852411efd4b910b82a5cf239ba, type: 2}
+  _bulletSize: 0.02
   _uiText: {fileID: 2040667872}
 --- !u!4 &1413755001
 Transform:

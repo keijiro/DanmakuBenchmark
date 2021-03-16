@@ -14,9 +14,9 @@ public readonly struct Bullet
         Velocity = velocity;
     }
 
-    public static Bullet Spawn(int id)
+    public static Bullet Spawn(int seed)
     {
-        var hash = new Klak.Math.XXHash((uint)id);
+        var hash = new Klak.Math.XXHash((uint)seed);
         var angle = hash.Float(math.PI * 2, 0u);
         var speed = hash.Float(0.05f, 0.2f, 1u);
         return new Bullet(math.float2(0, 0),

@@ -9,16 +9,13 @@ namespace Danmaku {
 struct BulletUpdateJob : IJobParallelFor
 {
     NativeArray<Bullet> _bullets;
-    float _delta;
+    float _deltaTime;
 
-    public BulletUpdateJob(NativeArray<Bullet> bullets, float delta)
-    {
-        _bullets = bullets;
-        _delta = delta;
-    }
+    public BulletUpdateJob(NativeArray<Bullet> bullets, float deltaTime)
+      => (_bullets, _deltaTime) = (bullets, deltaTime);
 
     public void Execute(int i)
-      => _bullets[i] = _bullets[i].NextFrame(_delta);
+      => _bullets[i] = _bullets[i].NextFrame(_deltaTime);
 }
 
 [BurstCompile]
@@ -29,22 +26,17 @@ struct BulletSweepJob : IJob
 
     public BulletSweepJob(NativeArray<Bullet> bullets,
                           NativeArray<BulletGroupInfo> info)
-    {
-        _bullets = bullets;
-        _info = info;
-    }
+      => (_bullets, _info) = (bullets, info);
 
     public void Execute()
     {
-        var count = _info[0].ActiveCount;
+        var actives = _info[0].ActiveCount;
         var written = 0;
-        for (var i = 0; i < count; i++)
+        for (var i = 0; i < actives; i++)
         {
-            if (_bullets[i].IsOnScreen)
-            {
-                if (i != written) _bullets[written] = _bullets[i];
-                written++;
-            }
+            if (!_bullets[i].IsOnScreen) continue;
+            if (i != written) _bullets[written] = _bullets[i];
+            written++;
         }
         _info[0] = BulletGroupInfo.ChangeActiveCount(_info[0], written);
     }
@@ -58,22 +50,17 @@ struct BulletSpawnJob : IJob
     int _spawnCount;
 
     public BulletSpawnJob(NativeArray<Bullet> bullets,
-                          NativeArray<BulletGroupInfo> info,
-                          int spawnCount)
-    {
-        _bullets = bullets;
-        _info = info;
-        _spawnCount = spawnCount;
-    }
+                          NativeArray<BulletGroupInfo> info, int spawnCount)
+      => (_bullets, _info, _spawnCount) = (bullets, info, spawnCount);
 
     public void Execute()
     {
-        var count = _info[0].ActiveCount;
-        var id = _info[0].SpawnCount;
-        var toSpawn = math.min(_bullets.Length - count, _spawnCount);
-        for (var i = 0; i < toSpawn; i++)
-            _bullets[count + i] = Bullet.Spawn(id + i);
-        _info[0] = BulletGroupInfo.AddActiveAndSpawnCount(_info[0], toSpawn);
+        var seed = _info[0].SpawnCount + 1;
+        var actives = _info[0].ActiveCount;
+        var spawns = math.min(_bullets.Length - actives, _spawnCount);
+        for (var i = 0; i < spawns; i++)
+            _bullets[actives + i] = Bullet.Spawn(seed + i);
+        _info[0] = BulletGroupInfo.AddActiveAndSpawnCount(_info[0], spawns);
     }
 }
 
