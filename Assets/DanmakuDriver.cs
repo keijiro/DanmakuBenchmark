@@ -9,7 +9,7 @@ public class DanmakuDriver : MonoBehaviour
     [SerializeField] Material _material = null;
     [SerializeField] UnityEngine.UI.Text _uiText = null;
 
-    const int MaxBulletCount = 0x100000;
+    const int MaxBulletCount = 0x200000;
 
     NativeArray<Bullet> _bullets;
     NativeArray<BulletGroupInfo> _info;
@@ -41,7 +41,7 @@ public class DanmakuDriver : MonoBehaviour
         var dt = 1.0f / 60;
         var actives = _info[0].ActiveCount;
 
-        var toSpawn = Time.deltaTime < 1.0f / 50 ? 200 : 10;
+        var toSpawn = Time.deltaTime < 1.0f / 50 ? 400 : 20;
 
         var handle = new BulletUpdateJob(_bullets, dt).Schedule(actives, 64);
         handle = new BulletSweepJob(_bullets, _info).Schedule(handle);
