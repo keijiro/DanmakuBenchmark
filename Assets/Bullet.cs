@@ -26,9 +26,6 @@ public readonly struct Bullet
 
     public Bullet NextFrame(float delta)
       => new Bullet(Position + Velocity * delta, Velocity);
-
-    public bool IsOnScreen
-      => math.all(Position > -1) && math.all(Position < 1);
 }
 
 public readonly struct BulletGroupInfo

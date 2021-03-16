@@ -59,11 +59,12 @@ class DanmakuDriver : MonoBehaviour
     void Update()
     {
         var dt = 1.0f / 60;
+        var aspect = (float)Screen.width / Screen.height;
         var toSpawn = Time.deltaTime < 1.0f / 50 ? 400 : 20;
 
         // Bullet update job chain
         var handle = new BulletUpdateJob(_bullets, dt).Schedule(ActiveBulletCount, 64);
-        handle = new BulletSweepJob(_bullets, _info).Schedule(handle);
+        handle = new BulletSweepJob(_bullets, _info, aspect).Schedule(handle);
         handle = new BulletSpawnJob(_bullets, _info, toSpawn).Schedule(handle);
         handle.Complete();
 
