@@ -7,7 +7,10 @@ using Unity.Mathematics;
 
 namespace Danmaku {
 
-static class MeshBuilderNew
+//
+// Danmaku mesh builder with the advanced mesh API & C# job system
+//
+static class MeshBuilderAdvanced
 {
     public static void Build(NativeSlice<Bullet> bullets, float size, Mesh mesh)
     {
@@ -45,7 +48,7 @@ static class MeshBuilderNew
         mesh.SetIndexBufferParams(vertexCount, IndexFormat.UInt32);
         mesh.SetIndexBufferData(iarray, 0, 0, vertexCount);
 
-        // Mesh construction
+        // Submesh definition
         var meshDesc = new SubMeshDescriptor(0, vertexCount, MeshTopology.Quads);
         mesh.SetSubMesh(0, meshDesc, MeshUpdateFlags.DontRecalculateBounds);
 

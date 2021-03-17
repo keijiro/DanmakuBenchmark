@@ -5,13 +5,16 @@ using Unity.Jobs;
 
 namespace Danmaku {
 
+//
+// A top-class manager class for driving a group of bullets
+//
 class DanmakuDriver : MonoBehaviour
 {
-    #region Editable sttributes
+    #region Editable attributes
 
-    enum ApiType { OldApi, NewApi }
+    enum MethodType { Simple, Advanced }
 
-    [SerializeField] ApiType _apiType = ApiType.OldApi;
+    [SerializeField] MethodType _methodType = MethodType.Advanced;
     [SerializeField] Material _material = null;
     [SerializeField] float _bulletSize = 0.02f;
     [SerializeField] UnityEngine.UI.Text _uiText = null;
@@ -22,9 +25,20 @@ class DanmakuDriver : MonoBehaviour
 
     const int MaxBulletCount = 0x200000;
 
+    // Fixed length array for managing bullets
+    // The actual length of the array is stored in _info.
     NativeArray<Bullet> _bullets;
+
+    // Single-element array of BulletGroupInfo
+    // We must use an array to make it modifiable from C# jobs.
     NativeArray<BulletGroupInfo> _info;
+
+    // Mesh object for rendering bullets
     Mesh _mesh;
+
+    #endregion
+
+    #region Private utility properties
 
     int ActiveBulletCount
       => _info[0].ActiveCount;
@@ -45,6 +59,7 @@ class DanmakuDriver : MonoBehaviour
 
         _mesh = new Mesh();
         _mesh.indexFormat = IndexFormat.UInt32;
+        _mesh.MarkDynamic();
     }
 
     void OnDisable()
@@ -60,19 +75,19 @@ class DanmakuDriver : MonoBehaviour
     {
         var dt = 1.0f / 60;
         var aspect = (float)Screen.width / Screen.height;
-        var toSpawn = Time.deltaTime < 1.0f / 58 ? 400 : 20;
+        var spawn = Time.deltaTime < 1.0f / 58 ? 400 : 20;
 
         // Bullet update job chain
         var handle = new BulletUpdateJob(_bullets, dt).Schedule(ActiveBulletCount, 64);
         handle = new BulletSweepJob(_bullets, _info, aspect).Schedule(handle);
-        handle = new BulletSpawnJob(_bullets, _info, toSpawn).Schedule(handle);
+        handle = new BulletSpawnJob(_bullets, _info, spawn).Schedule(handle);
         handle.Complete();
 
         // Mesh construction
-        if (_apiType == ApiType.OldApi)
-            MeshBuilderOld.Build(ActiveBulletSlice, _bulletSize, _mesh);
+        if (_methodType == MethodType.Simple)
+            MeshBuilderSimple.Build(ActiveBulletSlice, _bulletSize, _mesh);
         else
-            MeshBuilderNew.Build(ActiveBulletSlice, _bulletSize, _mesh);
+            MeshBuilderAdvanced.Build(ActiveBulletSlice, _bulletSize, _mesh);
 
         // Draw call
         Graphics.DrawMesh(_mesh, Vector3.zero, Quaternion.identity, _material, 0);

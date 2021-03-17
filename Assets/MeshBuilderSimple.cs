@@ -6,7 +6,10 @@ using System.Collections.Generic;
 
 namespace Danmaku {
 
-static class MeshBuilderOld
+//
+// Danmaku mesh builder with the simple mesh API
+//
+static class MeshBuilderSimple
 {
     static bool _allocated;
     static List<Vector3> _vertices;
