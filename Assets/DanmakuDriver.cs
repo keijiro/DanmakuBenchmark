@@ -60,7 +60,7 @@ class DanmakuDriver : MonoBehaviour
     {
         var dt = 1.0f / 60;
         var aspect = (float)Screen.width / Screen.height;
-        var toSpawn = Time.deltaTime < 1.0f / 50 ? 400 : 20;
+        var toSpawn = Time.deltaTime < 1.0f / 58 ? 400 : 20;
 
         // Bullet update job chain
         var handle = new BulletUpdateJob(_bullets, dt).Schedule(ActiveBulletCount, 64);
