@@ -2,13 +2,14 @@
 using UnityEngine.Rendering;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 namespace Danmaku {
 
 //
 // A top-class manager class for driving a group of bullets
 //
-class DanmakuDriver : MonoBehaviour
+sealed class DanmakuDriver : MonoBehaviour
 {
     #region Editable attributes
 
@@ -23,7 +24,7 @@ class DanmakuDriver : MonoBehaviour
 
     #region Private memebers
 
-    const int MaxBulletCount = 0x200000;
+    const int MaxBulletCount = 0x300000;
 
     // Fixed length array for managing bullets
     // The actual length of the array is stored in _info.
@@ -75,12 +76,13 @@ class DanmakuDriver : MonoBehaviour
     {
         var dt = 1.0f / 60;
         var aspect = (float)Screen.width / Screen.height;
+        var pos = math.float3(transform.position).xy;
         var spawn = Time.deltaTime < 1.0f / 58 ? 400 : 20;
 
         // Bullet update job chain
         var handle = new BulletUpdateJob(_bullets, dt).Schedule(ActiveBulletCount, 64);
         handle = new BulletSweepJob(_bullets, _info, aspect).Schedule(handle);
-        handle = new BulletSpawnJob(_bullets, _info, spawn).Schedule(handle);
+        handle = new BulletSpawnJob(_bullets, _info, pos, spawn).Schedule(handle);
         handle.Complete();
 
         // Mesh construction

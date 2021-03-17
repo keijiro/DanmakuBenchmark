@@ -5,6 +5,9 @@ using Unity.Mathematics;
 
 namespace Danmaku {
 
+//
+// Parallelized bullet update job
+//
 [BurstCompile]
 struct BulletUpdateJob : IJobParallelFor
 {
@@ -18,6 +21,9 @@ struct BulletUpdateJob : IJobParallelFor
       => _bullets[i] = _bullets[i].NextFrame(_deltaTime);
 }
 
+//
+// A job for removing out-of-bounds bullets (single threaded)
+//
 [BurstCompile]
 struct BulletSweepJob : IJob
 {
@@ -53,27 +59,31 @@ struct BulletSweepJob : IJob
     }
 }
 
+//
+// A job for spawning new bullets (single threaded)
+//
 [BurstCompile]
 struct BulletSpawnJob : IJob
 {
     NativeArray<Bullet> _bullets;
     NativeArray<BulletGroupInfo> _info;
-    int _spawnCount;
+    float2 _pos;
+    int _count;
 
     public BulletSpawnJob(NativeArray<Bullet> bullets,
                           NativeArray<BulletGroupInfo> info,
-                          int spawnCount)
-      => (_bullets, _info, _spawnCount) = (bullets, info, spawnCount);
+                          float2 pos, int count)
+      => (_bullets, _info, _pos, _count) = (bullets, info, pos, count);
 
     public void Execute()
     {
         var seed = _info[0].SpawnCount + 1;
 
         var actives = _info[0].ActiveCount;
-        var spawns = math.min(_bullets.Length - actives, _spawnCount);
+        var spawns = math.min(_bullets.Length - actives, _count);
 
         for (var i = 0; i < spawns; i++)
-            _bullets[actives + i] = Bullet.Spawn(seed + i);
+            _bullets[actives + i] = Bullet.Spawn(_pos, seed + i);
 
         _info[0] = BulletGroupInfo.AddActiveAndSpawnCount(_info[0], spawns);
     }

@@ -3,7 +3,10 @@ using Random = Unity.Mathematics.Random;
 
 namespace Danmaku {
 
-public readonly struct Bullet
+//
+// Simple linear motion bullet structure
+//
+readonly struct Bullet
 {
     public float2 Position { get; }
     public float2 Velocity { get; }
@@ -14,12 +17,12 @@ public readonly struct Bullet
         Velocity = velocity;
     }
 
-    public static Bullet Spawn(int seed)
+    public static Bullet Spawn(float2 position, int seed)
     {
         var hash = new Klak.Math.XXHash((uint)seed);
         var angle = hash.Float(math.PI * 2, 0u);
         var speed = hash.Float(0.05f, 0.2f, 1u);
-        return new Bullet(math.float2(0, 0),
+        return new Bullet(position,
                           math.float2(math.cos(angle),
                                       math.sin(angle)) * speed);
     }
@@ -28,7 +31,10 @@ public readonly struct Bullet
       => new Bullet(Position + Velocity * delta, Velocity);
 }
 
-public readonly struct BulletGroupInfo
+//
+// Bullet group shared information structure
+//
+readonly struct BulletGroupInfo
 {
     public int ActiveCount { get; }
     public int SpawnCount { get; }
